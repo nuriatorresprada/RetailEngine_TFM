@@ -1,0 +1,68 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package "retail_engine" #DDDDDD {
+    
+    abstract class Entity <<Abstract>> {
+        +to_dict()* : dict
+    }
+
+    abstract class BaseTransaction <<Abstract>> {
+        #_invoice_no : str
+        #_stock_code : str
+        -__customer_id : str
+        +customer_id() : str {property}
+        +calculate_total()* : float
+    }
+
+    class OnlineRetailTransaction {
+        +description : str
+        +quantity : int
+        +unit_price : float
+        +date : datetime
+        +country : str
+        +calculate_total() : float
+        +to_dict() : dict
+    }
+
+    class DataService {
+        -__path : str
+        -__invoice_pattern : re.Pattern
+        +__init__(file_path: str)
+        +get_instances() : List[OnlineRetailTransaction]
+    }
+
+    class DataTransformer {
+        +{static} to_dataframe(objects: list) : pd.DataFrame
+        +{static} compute_rfm(df: pd.DataFrame) : pd.DataFrame
+    }
+
+    class RetailAnalytics {
+        +rfm_table : pd.DataFrame
+        +__init__(rfm_table: pd.DataFrame)
+        +plot_distributions() : None
+        +{static} plot_revenue_by_country(df: pd.DataFrame) : None
+    }
+
+    class RetailEngineError <<Exception>> {
+        +__init__(mensaje: str)
+    }
+
+    class DataExtractionError <<Exception>>
+    class ValidationError <<Exception>>
+
+    ' Relaciones de Herencia
+    Entity <|-- BaseTransaction : <<inherits>>
+    BaseTransaction <|-- OnlineRetailTransaction : <<inherits>>
+    RetailEngineError <|-- DataExtractionError : <<inherits>>
+    RetailEngineError <|-- ValidationError : <<inherits>>
+
+    ' Relaciones de Uso/Dependencia (No es Composición estricta en UML de clases, sino uso)
+    DataService ..> OnlineRetailTransaction : <<instantiates>>
+    DataTransformer ..> OnlineRetailTransaction : <<processes>>
+    RetailAnalytics ..> DataTransformer : <<consumes_output>>
+
+}
+
+note top of BaseTransaction : Justifica Encapsulamiento:\n- Privado (__)\n- Protegido (_)\n- Público
+note right of DataService : Requisito RegEx:\nValidación estricta\nen la ingesta de datos
